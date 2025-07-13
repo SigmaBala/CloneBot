@@ -20,6 +20,11 @@ from datetime import date, datetime
 import pytz
 from sample_info import tempDict
 
+PORT = 8080
+
+WEB_URL = ""
+WEB_SLLEP = 3*60
+
 class Bot(Client):
 
     def __init__(self):
@@ -32,6 +37,25 @@ class Bot(Client):
             plugins={"root": "plugins"},
             sleep_threshold=10,
         )
+
+    async def web_alive():
+        if WEB_URL:
+            while True:
+                await asyncio.sleep(WEB_SLLEP)
+                try:
+                    async with aiohttp.ClientSession(
+                        timeout=aiohttp.ClientTimeout(total=10)
+                    ) as session:
+                        async with session.get(WEB_URL) as resp:
+                            logging.info(
+                                    "Pinged {} with response: {}".format(
+                                WEB_URL, resp.status
+                            )
+                        )
+                except asyncio.TimeoutError:
+                 logging.warning("Couldn't connect to the site URL..!")
+                except Exception:
+                 traceback.print_exc()
 
     async def start(self):
         b_users, b_chats = await db.get_banned()
@@ -58,8 +82,14 @@ class Bot(Client):
         temp.U_NAME = me.username
         temp.B_NAME = me.first_name
         self.username = '@' + me.username
+        app = web.AppRunner(await web_server())
+        await app.setup()
+        bind_address = "0.0.0.0"
+        await web.TCPSite(app, bind_address, PORT).start()
         logging.info(f"{me.first_name} with for Pyrogram v{__version__} (Layer {layer}) started on {me.username}.")
         logging.info(LOG_STR)
+        asyncio.create_task(Bot.web_alive())
+        logging.info("Keep Alive Service Started")
         logging.info(script.LOGO)
         tz = pytz.timezone('Asia/Kolkata')
         today = date.today()
