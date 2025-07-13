@@ -24,7 +24,7 @@ from plugins import web_server
 
 PORT = 8080
 
-WEB_URL = ""
+WEB_URL = "https://shinchanbot-ckyy.onrender.com"
 WEB_SLLEP = 3*60
 
 class Bot(Client):
